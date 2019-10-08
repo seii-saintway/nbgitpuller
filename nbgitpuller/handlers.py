@@ -164,7 +164,9 @@ class UIHandler(IPythonHandler):
                     break
             repo_dir = item.split('/')[-1]
             path = os.path.join(repo_dir, subPath)
-            if app.lower() == 'lab':
+            if app.lower() == 'app':
+                path = 'apps/' + path
+            elif app.lower() == 'lab':
                 path = 'lab/tree/' + path
             elif path.lower().endswith('.ipynb'):
                 path = 'notebooks/' + path
