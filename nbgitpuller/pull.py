@@ -61,10 +61,10 @@ class GitPuller(Configurable):
             return int(depth)
         return None
 
-    def __init__(self, git_url, branch_name, repo_dir, **kwargs):
-        assert git_url and branch_name
+    def __init__(self, clone_command, branch_name, repo_dir, **kwargs):
+        assert clone_command and branch_name
 
-        self.git_url = git_url
+        self.clone_command = clone_command
         self.branch_name = branch_name
         self.repo_dir = repo_dir
         newargs = {k: v for k, v in kwargs.items() if v is not None}
@@ -85,12 +85,13 @@ class GitPuller(Configurable):
         Clones repository
         """
         logging.info('Repo {} doesn\'t exist. Cloning...'.format(self.repo_dir))
-        clone_args = ['git', 'clone']
-        if self.depth and self.depth > 0:
-            clone_args.extend(['--depth', str(self.depth)])
-        clone_args.extend(['--branch', self.branch_name])
-        clone_args.extend([self.git_url, self.repo_dir])
+        clone_args = self.clone_command.split(' ')
+        for idx, item in reversed(list(enumerate(clone_args))):
+            if not item.startswith('-'):
+                break
+        clone_args.insert(idx+1, self.repo_dir)
         yield from execute_cmd(clone_args)
+        yield from execute_cmd(['git', 'checkout', self.branch_name], cwd=self.repo_dir)
         logging.info('Repo {} initialized'.format(self.repo_dir))
 
 
@@ -240,13 +241,13 @@ def main():
         level=logging.DEBUG)
 
     parser = argparse.ArgumentParser(description='Synchronizes a github repository with a local repository.')
-    parser.add_argument('git_url', help='Url of the repo to sync')
+    parser.add_argument('clone_command', help='Command of cloning repo')
     parser.add_argument('branch_name', default='master', help='Branch of repo to sync', nargs='?')
     parser.add_argument('repo_dir', default='.', help='Path to clone repo under', nargs='?')
     args = parser.parse_args()
 
     for line in GitPuller(
-        args.git_url,
+        args.clone_command,
         args.branch_name,
         args.repo_dir
     ).pull():
