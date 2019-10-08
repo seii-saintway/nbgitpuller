@@ -64,8 +64,11 @@ class SyncHandler(IPythonHandler):
             # relative to server_root_dir, so that all repos are always in
             # scope after cloning. Sometimes server_root_dir will include
             # things like `~` and so the path must be expanded.
+            for idx, item in reversed(list(enumerate(repo.split(' ')))):
+                if not item.startswith('-'):
+                    break
             repo_dir = os.path.join(os.path.expanduser(self.settings['server_root_dir']),
-                                    repo.split('/')[-1])
+                                    item.split('/')[-1])
 
             # We gonna send out event streams!
             self.set_header('content-type', 'text/event-stream')
@@ -156,7 +159,10 @@ class UIHandler(IPythonHandler):
         if urlPath:
             path = urlPath
         else:
-            repo_dir = repo.split('/')[-1]
+            for idx, item in reversed(list(enumerate(repo.split(' ')))):
+                if not item.startswith('-'):
+                    break
+            repo_dir = item.split('/')[-1]
             path = os.path.join(repo_dir, subPath)
             if app.lower() == 'lab':
                 path = 'lab/tree/' + path
